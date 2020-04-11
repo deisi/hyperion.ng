@@ -11,6 +11,8 @@ BUILD_TARGET="amd64"
 BUILD_PACKAGES=true
 # packages string inserted to cmake cmd
 PACKAGES=""
+# The branch to build
+BUILD_BRANCH="master"
 
 # get current path to this script, independent of calling
 pushd . > /dev/null
@@ -54,16 +56,18 @@ echo "########################################################
 # docker-compile.sh -t amd64        # The docker tag, one of amd64 | i386 | armv6hf | armv7hf | rpi-raspbian-stretch | rpi-raspbian-buster
 # docker-compile.sh -b Release      # cmake Release or Debug build
 # docker-compile.sh -p true         # If true build packages with CPack
+# docker-compile.sh -c master       # Branch or Tag to build
 # More informations to docker tags at: https://hub.docker.com/r/hyperionproject/hyperion-ci/"
 }
 
-while getopts t:b:p:h option
+while getopts t:b:p:c:h option
 do
  case "${option}"
  in
  t) BUILD_TARGET=${OPTARG};;
  b) BUILD_TYPE=${OPTARG};;
  p) BUILD_PACKAGES=${OPTARG};;
+ c) BUILD_BRANCH=${OPTARG};;
  h) printHelp; exit 0;;
  esac
 done
@@ -73,7 +77,7 @@ if [ $BUILD_PACKAGES == "true" ]; then
 	PACKAGES="package"
 fi
 
-echo "---> Initilize with BUILD_TARGET=${BUILD_TARGET}, BUILD_TYPE=${BUILD_TYPE}, BUILD_PACKAGES=${BUILD_PACKAGES}"
+echo "---> Initilize with BUILD_TARGET=${BUILD_TARGET}, BUILD_TYPE=${BUILD_TYPE}, BUILD_PACKAGES=${BUILD_PACKAGES}, BUILD_BRANCH=${BUILD_BRANCH}"
 
 # cleanup deploy folder, create folder for ownership
 sudo rm -fr $SCRIPT_PATH/deploy >/dev/null 2>&1
@@ -82,7 +86,7 @@ mkdir $SCRIPT_PATH/deploy >/dev/null 2>&1
 # get Hyperion source, cleanup previous folder
 echo "---> Downloading Hyperion source code from ${GIT_REPO_URL}"
 sudo rm -fr $SCRIPT_PATH/hyperion >/dev/null 2>&1
-git clone --recursive --depth 1 -q $GIT_REPO_URL $SCRIPT_PATH/hyperion || { echo "---> Failed to download Hyperion source code! Abort"; exit 1; }
+git clone --recursive --depth 1 --branch $BUILD_BRANCH -q $GIT_REPO_URL $SCRIPT_PATH/hyperion || { echo "---> Failed to download Hyperion source code! Abort"; exit 1; }
 
 # start compilation
 # Remove container after stop
